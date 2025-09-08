@@ -2,4 +2,5 @@
 ## Machine Learning for a Covert Communications Adversary
 ### Department of Electrical and Computer Engineering
 Student: Owen Raftery
+
 Chair: Professor Dennis Goeckel
