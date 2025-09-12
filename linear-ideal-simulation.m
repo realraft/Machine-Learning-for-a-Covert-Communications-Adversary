@@ -66,60 +66,6 @@ symbol_impulses(symbol_sample_indices) = recovered_symbols;
 % Find non-zero symbol positions for plotting
 nonzero_indices = find(symbol_impulses ~= 0);
 
-%% FFT Analysis of Matched Filter Output
-% Parameters for FFT analysis
-NUM_FFTS = 100;                     % Number of FFTs to average
-FFT_SIZE = 1024;                    % FFT size for frequency analysis
-SAMPLING_FREQ = 1 / SAMPLE_PERIOD;  % Sampling frequency
-
-% Initialize averaged FFT
-averaged_fft = zeros(1, FFT_SIZE);
-
-% Perform multiple FFTs and average them to reduce noise
-for fft_idx = 1:NUM_FFTS
-    % Generate random data for each FFT iteration
-    random_data = randi([0, 1], 1, NUM_DATA_SYMBOLS) * 2 - 1;
-    random_data(1:NUM_ZERO_PADDING) = 0;
-    random_data(end-NUM_ZERO_PADDING+1:end) = 0;
-    
-    % Upsample and apply pulse shaping
-    upsampled_random = upsample(random_data, OVERSAMPLING_RATIO);
-    tx_signal_random = conv(upsampled_random, srrc_filter);
-    tx_signal_random = tx_signal_random(start_index:end_index);
-    
-    % Apply matched filtering
-    rx_signal_random = conv(tx_signal_random, srrc_filter);
-    rx_signal_random = rx_signal_random(start_index:end_index);
-    
-    % Take a segment of the received signal for FFT
-    if length(rx_signal_random) >= FFT_SIZE
-        signal_segment = rx_signal_random(1:FFT_SIZE);
-    else
-        % Zero-pad if signal is shorter than FFT size
-        signal_segment = [rx_signal_random, zeros(1, FFT_SIZE - length(rx_signal_random))];
-    end
-    
-    % Apply window to reduce spectral leakage
-    windowed_segment = signal_segment .* hamming(length(signal_segment))';
-    
-    % Compute FFT and accumulate magnitude squared
-    fft_result = fft(windowed_segment, FFT_SIZE);
-    averaged_fft = averaged_fft + abs(fft_result).^2;
-end
-
-% Average the FFT results
-averaged_fft = averaged_fft / NUM_FFTS;
-
-% Create frequency vector
-freq_vector = (0:FFT_SIZE-1) * SAMPLING_FREQ / FFT_SIZE;
-freq_vector_shifted = freq_vector - SAMPLING_FREQ/2;
-
-% Shift FFT for proper frequency display (fftshift)
-averaged_fft_shifted = fftshift(averaged_fft);
-
-% Convert to dB scale
-averaged_fft_db = 10 * log10(averaged_fft_shifted + eps);
-
 %% Define Zoom Window for Detailed View
 symbols_to_display = 20;            % Number of symbols to show in zoom
 middle_symbol_index = floor(NUM_DATA_SYMBOLS / 2);
@@ -133,31 +79,31 @@ zoom_end_sample = min(length(transmitted_signal), zoom_end_sample);
 zoom_sample_range = zoom_start_sample:zoom_end_sample;
 
 %% Visualization
-figure('Position', [100, 100, 1200, 600]);
+figure;
 
 % (1) Tx waveform - full
-subplot(2,3,1);
+subplot(2,2,1);
 plot(1:length(transmitted_signal), transmitted_signal);
 title('Transmitted Signal (Full)');
 xlabel('Sample Index'); 
 ylabel('Amplitude');
 
 % (2) Tx waveform - zoomed
-subplot(2,3,2);
+subplot(2,2,2);
 plot(zoom_sample_range, transmitted_signal(zoom_sample_range));
 title('Transmitted Signal (Zoom: 20 Symbols)');
 xlabel('Sample Index'); 
 ylabel('Amplitude');
 
 % (3) Matched filter output - full
-subplot(2,3,3);
+subplot(2,2,3);
 stem(nonzero_indices, symbol_impulses(nonzero_indices), 'filled');
 title('Matched Filter Output (Full)');
 xlabel('Sample Index'); 
 ylabel('Amplitude');
 
 % (4) Matched filter output - zoomed
-subplot(2,3,4);
+subplot(2,2,4);
 % Find non-zero symbols within zoom range
 zoom_nonzero_indices = nonzero_indices(nonzero_indices >= zoom_start_sample & ...
                                        nonzero_indices <= zoom_end_sample);
@@ -165,12 +111,3 @@ stem(zoom_nonzero_indices, symbol_impulses(zoom_nonzero_indices), 'filled');
 title('Matched Filter Output (Zoom: 20 Symbols)');
 xlabel('Sample Index'); 
 ylabel('Amplitude');
-
-% (5) FFT of Matched Filter Output - Linear Scale
-subplot(2,3,5);
-plot(freq_vector_shifted, averaged_fft_shifted);
-title('Averaged FFT of Matched Filter Output');
-xlabel('Frequency (Hz)'); 
-ylabel('Power Spectral Density');
-grid on;
-xlim([0, SAMPLING_FREQ/4]);  % Show only positive frequencies
