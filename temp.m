@@ -1,80 +1,113 @@
-% ============================
-% Square-Root Raised Cosine (SRRC) Transmit and Receive Simulation
-% ============================
+%% Square-Root Raised Cosine (SRRC) Transmit and Receive Simulation
+% Complete communication system simulation demonstrating SRRC pulse shaping
+% at the transmitter and matched filtering at the receiver.
+% This implementation shows the full transmit-receive chain with proper
+% signal processing techniques.
 
-% Parameters
-Nsym = 1000;             % Number of data symbols
-osr = 16;                % Oversampling rate (samples per symbol)
-Ts = 1;                  % Symbol period
-T = Ts/osr;              % Sample period
-rolloff = 0.25;          % SRRC roll-off factor
-span = 10;               % SRRC filter span in symbols
+% Clear workspace and close figures
+clc;
+clear;
+close all;
 
-% --------------------------------------------------------
-% Generate Random Data Symbols
-% --------------------------------------------------------
-a = randi([0 1], 1, Nsym)*2 - 1;   % Random +/-1 symbols
-a(1:10) = 0;                       % First 10 set to zero
-a(end-9:end) = 0;                  % Last 10 set to zero
+%% System Parameters
+NUM_DATA_SYMBOLS = 1000;            % Number of data symbols to transmit
+OVERSAMPLING_RATIO = 16;            % Samples per symbol (oversampling factor)
+SYMBOL_PERIOD = 1;                  % Symbol period (Ts)
+SAMPLE_PERIOD = SYMBOL_PERIOD / OVERSAMPLING_RATIO;  % Sample period (T)
+ROLLOFF_FACTOR = 0.25;              % SRRC roll-off factor (beta)
+FILTER_SPAN_SYMBOLS = 10;           % SRRC filter span in symbol periods
+NUM_ZERO_PADDING = 10;              % Zero symbols at start and end
 
-% --------------------------------------------------------
-% Design the SRRC Filter
-% --------------------------------------------------------
-p = rcosdesign(rolloff, span, osr, 'sqrt');   % SRRC filter
+%% Generate Random Data Symbols
+% Create random binary symbols (+1/-1 for BPSK)
+data_symbols = randi([0, 1], 1, NUM_DATA_SYMBOLS) * 2 - 1;
 
-% --------------------------------------------------------
-% Pulse Shaping (Transmitter)
-% --------------------------------------------------------
-a_up = upsample(a, osr);           % Insert zeros (length = 1000*16 = 16000)
+% Add zero padding to minimize edge effects
+data_symbols(1:NUM_ZERO_PADDING) = 0;
+data_symbols(end-NUM_ZERO_PADDING+1:end) = 0;
 
-% Convolve and trim to exactly 16000 samples
-x_full = conv(a_up, p);            % Convolution (longer than 16000)
-start_idx = floor(length(p)/2);    % Half filter delay
-x = x_full(start_idx+1 : start_idx+16000);  % Extract central 16000 samples
+%% Design Square-Root Raised Cosine Filter
+% Create SRRC pulse shaping filter (used at both TX and RX)
+srrc_filter = rcosdesign(ROLLOFF_FACTOR, FILTER_SPAN_SYMBOLS, ...
+                        OVERSAMPLING_RATIO, 'sqrt');
 
-% --------------------------------------------------------
-% Matched Filtering (Receiver)
-% --------------------------------------------------------
-y_full = conv(x, p);               % Apply matched filter
-y = y_full(start_idx+1 : start_idx+16000);  % Trim to 16000 samples
+%% Transmitter: Pulse Shaping
+% Upsample data symbols by inserting zeros
+upsampled_symbols = upsample(data_symbols, OVERSAMPLING_RATIO);
 
-% ==== Prepare upsampled symbol impulses (length 16000) ====
-samples_up = zeros(size(y));        % length(y) should be 16000
-samples_up(1:osr:end) = samples;   % place the 1000 symbol samples at symbol instants
-sym_pos = 1:osr:length(y);         % sample indices for symbol instants (1-based)
+% Apply pulse shaping filter (convolution)
+transmitted_signal_full = conv(upsampled_symbols, srrc_filter);
 
-% Create a 16k vector with ±1 spikes at symbol instants
-y_spikes = zeros(size(y));          % length 16000
-y_spikes(1:osr:end) = samples;      % place the symbol values at correct positions
+% Calculate filter delay and extract central portion
+filter_delay_samples = floor(length(srrc_filter) / 2);
+target_length = NUM_DATA_SYMBOLS * OVERSAMPLING_RATIO;
+start_index = filter_delay_samples + 1;
+end_index = start_index + target_length - 1;
 
-% Find nonzero indices
-nz_idx = find(y_spikes ~= 0);
+% Extract transmitted signal (compensating for filter delay)
+transmitted_signal = transmitted_signal_full(start_index:end_index);
 
+%% Receiver: Matched Filtering
+% Apply matched filter (same SRRC filter used at transmitter)
+received_signal_full = conv(transmitted_signal, srrc_filter);
+
+% Extract received signal (compensating for filter delay)
+received_signal = received_signal_full(start_index:end_index);
+
+%% Sample at Symbol Instants
+% Extract samples at symbol timing instants
+symbol_sample_indices = 1:OVERSAMPLING_RATIO:length(received_signal);
+recovered_symbols = received_signal(symbol_sample_indices);
+
+% Create impulse representation for visualization
+symbol_impulses = zeros(size(received_signal));
+symbol_impulses(symbol_sample_indices) = recovered_symbols;
+
+% Find non-zero symbol positions for plotting
+nonzero_indices = find(symbol_impulses ~= 0);
+
+%% Define Zoom Window for Detailed View
+symbols_to_display = 20;            % Number of symbols to show in zoom
+middle_symbol_index = floor(NUM_DATA_SYMBOLS / 2);
+zoom_start_sample = (middle_symbol_index - floor(symbols_to_display / 2)) * ...
+                   OVERSAMPLING_RATIO + 1;
+zoom_end_sample = zoom_start_sample + symbols_to_display * OVERSAMPLING_RATIO - 1;
+
+% Ensure zoom indices are within signal bounds
+zoom_start_sample = max(1, zoom_start_sample);
+zoom_end_sample = min(length(transmitted_signal), zoom_end_sample);
+zoom_sample_range = zoom_start_sample:zoom_end_sample;
+
+%% Visualization
 figure;
 
 % (1) Tx waveform - full
 subplot(2,2,1);
-plot(1:length(x), x);
+plot(1:length(transmitted_signal), transmitted_signal);
 title('Transmitted Signal (Full)');
-xlabel('Sample Index'); ylabel('Amplitude');
+xlabel('Sample Index'); 
+ylabel('Amplitude');
 
 % (2) Tx waveform - zoomed
 subplot(2,2,2);
-plot(t_zoom(1):t_zoom(end), x(t_zoom(1):t_zoom(end)));
+plot(zoom_sample_range, transmitted_signal(zoom_sample_range));
 title('Transmitted Signal (Zoom: 20 Symbols)');
-xlabel('Sample Index'); ylabel('Amplitude');
+xlabel('Sample Index'); 
+ylabel('Amplitude');
 
 % (3) Matched filter output - full
 subplot(2,2,3);
-stem(nz_idx, y_spikes(nz_idx), 'filled');
+stem(nonzero_indices, symbol_impulses(nonzero_indices), 'filled');
 title('Matched Filter Output (Full)');
-xlabel('Sample Index'); ylabel('Amplitude');
+xlabel('Sample Index'); 
+ylabel('Amplitude');
 
 % (4) Matched filter output - zoomed
 subplot(2,2,4);
-% keep only nonzeros in zoom range
-zoom_idx = t_zoom(1):t_zoom(end);
-nz_zoom = zoom_idx(y_spikes(zoom_idx) ~= 0);
-stem(nz_zoom, y_spikes(nz_zoom), 'filled');
+% Find non-zero symbols within zoom range
+zoom_nonzero_indices = nonzero_indices(nonzero_indices >= zoom_start_sample & ...
+                                       nonzero_indices <= zoom_end_sample);
+stem(zoom_nonzero_indices, symbol_impulses(zoom_nonzero_indices), 'filled');
 title('Matched Filter Output (Zoom: 20 Symbols)');
-xlabel('Sample Index'); ylabel('Amplitude');
+xlabel('Sample Index'); 
+ylabel('Amplitude');
