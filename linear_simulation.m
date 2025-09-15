@@ -4,7 +4,7 @@
 
 Nsym = 1000; % number of symbols
 beta = 0.25; % rolloff factor
-span = 10; 
+span = 10; % filter span in symbols
 osr = 16; % oversampling rate
 Ts = 1; % symbol period
 T = Ts/osr; % sample period
