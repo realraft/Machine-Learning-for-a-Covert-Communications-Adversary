@@ -9,6 +9,8 @@ span = 10; % filter span in symbols
 osr = 16; % oversampling rate
 Ts = 1; % symbol period
 avoid = 10; % number of samples at head and tail to avoid filter transients
+a1 = 1; % nonlinearity component from Jessica thesis 
+a3 = -0.05; % nonlinearity component from Jessica thesis
 
 %% Calculations
 
@@ -32,6 +34,7 @@ for k = 1:Nfft
 
     % x(t)
     x = conv(ak, p, 'same'); % perform summation
+    x = a1*x + a3*x.^3; % add nonlinearities
 
     % y(t)
     y = conv(x, p, 'same'); % x(t) * p(t)
