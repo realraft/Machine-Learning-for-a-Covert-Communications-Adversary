@@ -26,7 +26,6 @@ y_fft = zeros(1, chunk); % initialize average fft array
 for k = 1:Nfft
 
     % ak
-    ak = zeros(1, Nsym); % initialize ak
     ak = 2*randi([0 1], 1, Nsym) - 1; % randomly fill ak with +-1 symbols
     ak = upsample(ak, osr); % upsample ak so it has size(chunk) samples
     ak(1:avoid) = 0; % zero specified number of samples at head
