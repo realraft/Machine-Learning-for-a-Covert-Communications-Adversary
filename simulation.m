@@ -17,7 +17,6 @@ a3 = -0.05; % nonlinearity component from Jessica thesis
 T = Ts/osr; % sample period
 fs = 1/T; % sample rate 
 chunk = Nsym * osr; % chunk length
-valid_idx = (avoid+1) : (chunk-avoid); % valid indexes to insert symbols
 
 % p(t)
 p = rcosdesign(beta, span, osr, 'sqrt'); % square root raised cosine
@@ -27,10 +26,11 @@ y_fft = zeros(1, chunk); % initialize average fft array
 for k = 1:Nfft
 
     % ak
-    ak = zeros(1, chunk); % initialize ak
-    sym_pos = valid_idx(randperm(numel(valid_idx), Nsym)); % randomly choose symbol positions
-    sym = 2*randi([0 1], 1, Nsym) - 1; % randomly choose symbol sign
-    ak(sym_pos) = sym; % insert symbols
+    ak = zeros(1, Nsym); % initialize ak
+    ak = 2*randi([0 1], 1, Nsym) - 1; % randomly fill ak with +-1 symbols
+    ak = upsample(ak, osr); % upsample ak so it has size(chunk) samples
+    ak(1:avoid) = 0; % zero specified number of samples at head
+    ak(end-avoid+1:end) = 0; % zero specified number of samples at tail
 
     % x(t)
     x = conv(ak, p, 'same'); % perform summation
