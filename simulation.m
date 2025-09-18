@@ -11,7 +11,7 @@ Ts = 1; % symbol period
 avoid = 10; % number of samples at head and tail to avoid filter transients
 a1 = 1; % nonlinearity component from Jessica thesis 
 a3 = -0.05; % nonlinearity component from Jessica thesis
-var = 1; % noise variance
+var = 0.1; % noise variance
 
 %% Calculations
 
