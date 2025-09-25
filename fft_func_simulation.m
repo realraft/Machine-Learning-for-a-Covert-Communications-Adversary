@@ -9,8 +9,9 @@ span = 10; % filter span in symbols
 osr = 16; % oversampling rate
 Ts = 1; % symbol period
 avoid = 10; % number of samples at head and tail to avoid filter transients
+a = 10; % amplitude of x
 a1 = 1; % nonlinearity component from Jessica thesis 
-a3 = -0.05; % nonlinearity component from Jessica thesis
+a3 = -20; % nonlinearity component from Jessica thesis
 var = 0.1; % noise variance
 
 %% Calculations
@@ -20,25 +21,33 @@ fs = 1/T; % sample rate
 chunk = Nsym * osr; % chunk length
 
 % create params structure for function
-params = struct('Nsym', Nsym, 'Nfft', Nfft, 'osr', osr, 'avoid', avoid, 'a1', a1, 'a3', a3, 'var', var, 'chunk', chunk);
+params = struct('Nsym', Nsym, 'Nfft', Nfft, 'osr', osr, 'avoid', avoid, 'a', a, 'a1', a1, 'a3', a3, 'var', var, 'chunk', chunk);
 
 % p(t)
 p = rcosdesign(beta, span, osr, 'sqrt'); % square root raised cosine
 
 % FFT
-y_fft = avgFFT(params, p, true, true); % take average fft (boolean 1 -> nonlinearities, boolean 2 -> noise)
+y_nl = avgFFT(params, p, true, false); % take average fft (boolean 1 -> nonlinearities, boolean 2 -> noise)
+y_l = avgFFT(params, p, false, false);
 
 %% Plotting
 
 f = (-chunk/2 : chunk/2-1) * (fs / chunk); % frequency vector from -fs/2 to fs/2
-y_fft_sh = fftshift(y_fft); % center zero frequency
-y_fft_db = 10*log10(y_fft_sh + eps); % convert to dB, add eps to avoid log of zero
+% compute PSDs (already returned as averaged power) and convert to dB
+y_nl_sh = fftshift(y_nl); % center zero frequency for nonlinear case
+y_l_sh  = fftshift(y_l);  % center zero frequency for linear case
+
+y_nl_db = 10*log10(y_nl_sh + eps); % convert to dB, add eps to avoid log of zero
+y_l_db  = 10*log10(y_l_sh + eps);
 
 figure;
-plot(f, y_fft_db);
+plot(f, y_l_db, '-b', 'LineWidth', 1.2); hold on; % linear (blue)
+plot(f, y_nl_db, '--r', 'LineWidth', 1.2); % nonlinear (red dashed)
+hold off;
 xlabel('Frequency (Hz)');
 ylabel('Power (dB)');
-title('Average Power Spectral Density of y(t)');
+title('Average Power Spectral Density of y(t) (No Noise)');
+legend('Linear','Nonlinear');
 grid on;
 xlim([-fs/2 fs/2]);
 
@@ -48,6 +57,7 @@ function y_fft =  avgFFT(params, p, nonlinearities, noise)
     Nfft = params.Nfft; 
     osr = params.osr; 
     avoid = params.avoid; 
+    a = params.a;
     a1 = params.a1; 
     a3 = params.a3; 
     var = params.var; 
@@ -57,7 +67,7 @@ function y_fft =  avgFFT(params, p, nonlinearities, noise)
     for k = 1:Nfft
 
         % ak
-        ak = 2*randi([0 1], 1, Nsym) - 1; % randomly fill ak with +-1 symbols
+        ak = 2*a*randi([0 1], 1, Nsym) - a; % randomly fill ak with +-a symbols
         ak = upsample(ak, osr); % upsample ak so it has size(chunk) samples
         ak(1:avoid) = 0; % zero specified number of samples at head
         ak(end-avoid+1:end) = 0; % zero specified number of samples at tail
