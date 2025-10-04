@@ -9,6 +9,7 @@ span = 10; % filter span in symbols
 osr = 16; % oversampling rate
 Ts = 1; % symbol period
 avoid = 10; % number of samples at head and tail to avoid filter transients
+a = 1; % magnitude of symbols
 a1 = 1; % nonlinearity component from Jessica thesis 
 a3 = -0.05; % nonlinearity component from Jessica thesis
 var = 0.1; % noise variance
@@ -27,7 +28,7 @@ y_fft = zeros(1, chunk); % initialize average fft array
 for k = 1:Nfft
 
     % ak
-    ak = 2*randi([0 1], 1, Nsym) - 1; % randomly fill ak with +-1 symbols
+    ak = 2*a*randi([0 1], 1, Nsym) - a; % randomly fill ak with +-a symbols
     ak = upsample(ak, osr); % upsample ak so it has size(chunk) samples
     ak(1:avoid) = 0; % zero specified number of samples at head
     ak(end-avoid+1:end) = 0; % zero specified number of samples at tail
