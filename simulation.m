@@ -9,9 +9,9 @@ span = 10; % filter span in symbols
 osr = 16; % oversampling rate
 Ts = 1; % symbol period
 avoid = 10; % number of samples at head and tail to avoid filter transients
-a = 1; % magnitude of symbols
+a = 1.4678; % magnitude of symbols
 a1 = 1; % nonlinearity component from Jessica thesis 
-a3 = -0.05; % nonlinearity component from Jessica thesis
+a3 = -2.5261; % nonlinearity component from Jessica thesis
 var = 0.1; % noise variance
 
 %% Calculations
