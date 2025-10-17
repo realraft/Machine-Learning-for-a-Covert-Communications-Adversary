@@ -1,0 +1,2 @@
+make sure you fix the truncating of features in the training
+i.e. fft_01 -> fft_20 is not the same frequencies between 20_bins and test_data correct for the test data. think of a solution for this
