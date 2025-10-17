@@ -1,4 +1,4 @@
-%% Generate CSV features for linear vs nonlinear signals (60 FFT bins, dB scale).
+%% Generate CSV features for linear vs nonlinear signals (40 FFT bins, dB scale).
 
 % Editable parameters -----------------------------------------------------
 Nsym = 1000;
@@ -13,8 +13,8 @@ a1 = 1;
 a3 = -2.5261;
 noiseVariance = 0.1;
 includeNoise = true;
-numRuns = 1000; % choose an even value for a balanced dataset
-outputName = '60_bins_training_data.csv';
+numRuns = 5000; % choose an even value for a balanced dataset
+outputName = '40_bins_training_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(scriptDir, '..', 'tools'));
@@ -36,7 +36,7 @@ fs = 1 / T;
 chunk = Nsym * osr;
 freqAxis = (0:chunk-1) * (fs / chunk);
 
-numFeatures = 60;
+numFeatures = 40;
 maxAnalysisFreq = 5;
 targetFreqs = linspace(0, maxAnalysisFreq, numFeatures);
 

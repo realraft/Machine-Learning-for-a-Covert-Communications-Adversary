@@ -1,4 +1,4 @@
-%% Generate CSV features for linear vs nonlinear signals (20 FFT bins + shape metrics, dB scale).
+%% Generate CSV features for linear vs nonlinear signals (20 FFT bins + distortion metrics, dB scale).
 
 % Editable parameters -----------------------------------------------------
 Nsym = 1000;
@@ -13,8 +13,8 @@ a1 = 1;
 a3 = -2.5261;
 noiseVariance = 0.1;
 includeNoise = true;
-numRuns = 1000; % choose an even value for a balanced dataset
-outputName = '20_bins_shape_training_data.csv';
+numRuns = 5000; % choose an even value for a balanced dataset
+outputName = '20_bins_distortion_training_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(scriptDir, '..', 'tools'));
@@ -41,11 +41,13 @@ maxAnalysisFreq = 5;
 targetFreqs = linspace(0, maxAnalysisFreq, numFftFeatures);
 
 extraFeatureNames = { ...
-    'spectral_centroid_norm', ...
-    'spectral_entropy', ...
-    'spectral_skewness', ...
-    'spectral_kurtosis', ...
-    'spectral_flatness'};
+    'harmonic_distortion_ratio', ...
+    'harmonic_distortion_db', ...
+    'intermod_power_ratio', ...
+    'intermod_power_db', ...
+    'acpr_db', ...
+    'regrowth_power_db', ...
+    'nonlinear_residual_ratio'};
 numExtraFeatures = numel(extraFeatureNames);
 
 featureMatrix = zeros(numRuns, numFftFeatures + numExtraFeatures);
@@ -67,29 +69,35 @@ for idx = 1:numRuns
     fftFeatures = interp1(freqAxis, fftPowerDb, targetFreqs, 'linear');
 
     analysisPower = avgPower(analysisMask);
-    powerSum = sum(analysisPower) + eps;
-    psd = analysisPower / powerSum;
 
-    centroid = sum(analysisFreqs .* analysisPower) / powerSum;
-    centroidNorm = centroid / (max(analysisFreqs) + eps);
+    mainMask = analysisFreqs <= 1;
+    adjacentMask = analysisFreqs > 1 & analysisFreqs <= 2;
+    intermodMask = analysisFreqs > 1.5 & analysisFreqs <= 3;
+    harmonicMask = analysisFreqs >= 2 & analysisFreqs <= maxAnalysisFreq;
+    regrowthMask = analysisFreqs >= 3 & analysisFreqs <= maxAnalysisFreq;
 
-    spectralEntropy = -sum(psd .* log2(psd + eps));
+    mainPower = sum(analysisPower(mainMask)) + eps;
+    adjacentPower = sum(analysisPower(adjacentMask)) + eps;
+    intermodPower = sum(analysisPower(intermodMask)) + eps;
+    harmonicPower = sum(analysisPower(harmonicMask)) + eps;
+    regrowthPower = sum(analysisPower(regrowthMask)) + eps;
+    residualPower = sum(analysisPower(~mainMask)) + eps;
 
-    freqDiff = analysisFreqs - centroid;
-    spectralStd = sqrt(sum((freqDiff .^ 2) .* psd) + eps);
-    spectralSkewness = sum((freqDiff .^ 3) .* psd) / (spectralStd ^ 3 + eps);
-    spectralKurtosis = sum((freqDiff .^ 4) .* psd) / (spectralStd ^ 4 + eps);
+    acprDb = 10 * log10(adjacentPower / mainPower);
+    harmonicRatio = harmonicPower / mainPower;
+    intermodRatio = intermodPower / mainPower;
+    residualRatio = residualPower / mainPower;
 
-    spectralFlatness = exp(mean(log(analysisPower + eps))) / (mean(analysisPower) + eps);
+    distortionFeatures = [ ...
+        harmonicRatio, ...
+        10 * log10(harmonicRatio + eps), ...
+        intermodRatio, ...
+        10 * log10(intermodRatio + eps), ...
+        acprDb, ...
+        10 * log10(regrowthPower + eps), ...
+        residualRatio];
 
-    shapeFeatures = [ ...
-        centroidNorm, ...
-        spectralEntropy, ...
-        spectralSkewness, ...
-        spectralKurtosis, ...
-        spectralFlatness];
-
-    featureMatrix(idx, :) = [fftFeatures, shapeFeatures];
+    featureMatrix(idx, :) = [fftFeatures, distortionFeatures];
 end
 
 % Export ------------------------------------------------------------------
