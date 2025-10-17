@@ -4,3 +4,7 @@
 Student: Owen Raftery
 
 Chair: Professor Dennis Goeckel
+
+## Data Labeling in Training Data
+- **Label `0`**: Linear signal (no nonlinearity applied)
+- **Label `1`**: Nonlinear signal (nonlinearity applied)
