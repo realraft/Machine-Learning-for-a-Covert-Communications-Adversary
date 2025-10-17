@@ -1,0 +1,13 @@
+first iteration features:
+20 evenly spaced samples from 0hz to 5hz
+
+later iterations:
+more spaced samples as features (max out at abt 50-60)
+add in more calculated features:
+total_power,max_power,crest_factor,spectral_entropy,spectral_centroid_norm,spectral_skewness,spectral_kurtosis,shoulder_power_ratio,outer_power_ratio
+more ideas:
+Spectral flatness / kurtosis
+Adjacent channel power ratio (ACPR)
+Harmonic distortion ratios
+Main-band power
+Regrowth power
