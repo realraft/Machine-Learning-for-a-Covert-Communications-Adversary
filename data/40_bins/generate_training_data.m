@@ -13,7 +13,7 @@ a1 = 1;
 a3 = -2.5261;
 noiseVariance = 0.1;
 includeNoise = true;
-numRuns = 10; % choose an even value for a balanced dataset
+numRuns = 5000; % choose an even value for a balanced dataset
 outputName = '40_bins_training_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
