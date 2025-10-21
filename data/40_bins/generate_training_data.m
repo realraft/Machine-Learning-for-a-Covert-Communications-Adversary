@@ -13,7 +13,7 @@ a1 = 1;
 a3 = -2.5261;
 noiseVariance = 0.1;
 includeNoise = true;
-numRuns = 5000; % choose an even value for a balanced dataset
+numRuns = 10; % choose an even value for a balanced dataset
 outputName = '40_bins_training_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
@@ -34,11 +34,11 @@ pulse = rcosdesign(beta, span, osr, 'sqrt');
 T = Ts / osr;
 fs = 1 / T;
 chunk = Nsym * osr;
-freqAxis = (0:chunk-1) * (fs / chunk);
 
 numFeatures = 40;
 maxAnalysisFreq = 5;
-targetFreqs = linspace(0, maxAnalysisFreq, numFeatures);
+referenceMaxBins = 60;
+[targetFreqs, fftSampleIdx] = get_fft_reference_selection(numFeatures, fs, chunk, maxAnalysisFreq, referenceMaxBins); % align to master grid
 
 featureMatrix = zeros(numRuns, numFeatures);
 labels = zeros(numRuns, 1);
@@ -53,7 +53,7 @@ for idx = 1:numRuns
     [avgPower, ~] = compute_fft_average(params, pulse, useNonlinear, includeNoise);
     fftPowerDb = 10 * log10(avgPower + eps);
 
-    featureMatrix(idx, :) = interp1(freqAxis, fftPowerDb, targetFreqs, 'linear');
+    featureMatrix(idx, :) = fftPowerDb(fftSampleIdx);
 end
 
 % Export ------------------------------------------------------------------

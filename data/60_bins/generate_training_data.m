@@ -34,11 +34,11 @@ pulse = rcosdesign(beta, span, osr, 'sqrt');
 T = Ts / osr;
 fs = 1 / T;
 chunk = Nsym * osr;
-freqAxis = (0:chunk-1) * (fs / chunk);
 
 numFeatures = 60;
 maxAnalysisFreq = 5;
-targetFreqs = linspace(0, maxAnalysisFreq, numFeatures);
+referenceMaxBins = 60;
+[targetFreqs, fftSampleIdx] = get_fft_reference_selection(numFeatures, fs, chunk, maxAnalysisFreq, referenceMaxBins); % align to master grid
 
 featureMatrix = zeros(numRuns, numFeatures);
 labels = zeros(numRuns, 1);
@@ -53,7 +53,7 @@ for idx = 1:numRuns
     [avgPower, ~] = compute_fft_average(params, pulse, useNonlinear, includeNoise);
     fftPowerDb = 10 * log10(avgPower + eps);
 
-    featureMatrix(idx, :) = interp1(freqAxis, fftPowerDb, targetFreqs, 'linear');
+    featureMatrix(idx, :) = fftPowerDb(fftSampleIdx);
 end
 
 % Export ------------------------------------------------------------------

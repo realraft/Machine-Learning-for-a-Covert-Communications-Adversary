@@ -38,7 +38,8 @@ freqAxis = (0:chunk-1) * (fs / chunk);
 
 numFftFeatures = 20;
 maxAnalysisFreq = 5;
-targetFreqs = linspace(0, maxAnalysisFreq, numFftFeatures);
+referenceMaxBins = 60;
+[targetFreqs, fftSampleIdx] = get_fft_reference_selection(numFftFeatures, fs, chunk, maxAnalysisFreq, referenceMaxBins); % align to master grid
 
 extraFeatureNames = { ...
     'total_power', ...
@@ -66,7 +67,7 @@ for idx = 1:numRuns
     [avgPower, yTime] = compute_fft_average(params, pulse, useNonlinear, includeNoise);
     fftPowerDb = 10 * log10(avgPower + eps);
 
-    fftFeatures = interp1(freqAxis, fftPowerDb, targetFreqs, 'linear');
+    fftFeatures = fftPowerDb(fftSampleIdx);
 
     analysisPower = avgPower(analysisMask);
     powerSum = sum(analysisPower) + eps;
