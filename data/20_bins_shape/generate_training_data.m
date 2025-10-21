@@ -1,104 +1,45 @@
 %% Generate CSV features for linear vs nonlinear signals (20 FFT bins + shape metrics, dB scale).
 
-% Editable parameters -----------------------------------------------------
-Nsym = 1000;
-Nfft = 100;
-beta = 0.25;
-span = 10;
-osr = 16;
-Ts = 1;
-avoid = 10;
-a = 1.4678;
-a1 = 1;
-a3 = -2.5261;
-noiseVariance = 0.1;
-includeNoise = true;
-numRuns = 5000; % choose an even value for a balanced dataset
-outputName = '20_bins_shape_training_data.csv';
-
+%% Setup
 scriptDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(scriptDir, '..', 'helper'));
 
-% Setup -------------------------------------------------------------------
-params = struct('Nsym', Nsym, ...
-                'Nfft', Nfft, ...
-                'osr', osr, ...
-                'avoid', avoid, ...
-                'a', a, ...
-                'a1', a1, ...
-                'a3', a3, ...
-                'noiseVar', noiseVariance);
+config = get_data_params(20, scriptDir, '20_bins_shape_training_data.csv');
 
-pulse = rcosdesign(beta, span, osr, 'sqrt');
-
-T = Ts / osr;
-fs = 1 / T;
-chunk = Nsym * osr;
-freqAxis = (0:chunk-1) * (fs / chunk);
-
-numFftFeatures = 20;
-maxAnalysisFreq = 5;
-referenceMaxBins = 60;
-[targetFreqs, fftSampleIdx] = get_fft_reference_selection(numFftFeatures, fs, chunk, maxAnalysisFreq, referenceMaxBins); % align to master grid
-
-extraFeatureNames = { ...
+extraFeatureNames = {
     'spectral_centroid_norm', ...
     'spectral_entropy', ...
     'spectral_skewness', ...
     'spectral_kurtosis', ...
     'spectral_flatness'};
+
 numExtraFeatures = numel(extraFeatureNames);
 
-featureMatrix = zeros(numRuns, numFftFeatures + numExtraFeatures);
-labels = zeros(numRuns, 1);
+featureMatrix = zeros(config.numRuns, config.numFftFeatures + numExtraFeatures);
+labels = zeros(config.numRuns, 1);
 
-outputFile = fullfile(scriptDir, outputName);
-
-analysisMask = freqAxis <= maxAnalysisFreq;
-analysisFreqs = freqAxis(analysisMask);
-
-% Simulations -------------------------------------------------------------
-for idx = 1:numRuns
-    useNonlinear = idx > numRuns/2;
+%% Simulations
+for idx = 1:config.numRuns
+    useNonlinear = idx > config.numRuns / 2;
     labels(idx) = double(useNonlinear);
 
-    [avgPower, ~] = compute_fft_average(params, pulse, useNonlinear, includeNoise);
+    [avgPower, ~] = compute_fft_average(config.params, config.pulse, useNonlinear, config.includeNoise);
     fftPowerDb = 10 * log10(avgPower + eps);
 
-    fftFeatures = fftPowerDb(fftSampleIdx);
+    fftFeatures = fftPowerDb(config.fftSampleIdx);
 
-    analysisPower = avgPower(analysisMask);
-    powerSum = sum(analysisPower) + eps;
-    psd = analysisPower / powerSum;
+    analysisPower = avgPower(config.analysisMask);
+    stats = compute_spectral_stats(config.analysisFreqs, analysisPower);
 
-    centroid = sum(analysisFreqs .* analysisPower) / powerSum;
-    centroidNorm = centroid / (max(analysisFreqs) + eps);
-
-    spectralEntropy = -sum(psd .* log2(psd + eps));
-
-    freqDiff = analysisFreqs - centroid;
-    spectralStd = sqrt(sum((freqDiff .^ 2) .* psd) + eps);
-    spectralSkewness = sum((freqDiff .^ 3) .* psd) / (spectralStd ^ 3 + eps);
-    spectralKurtosis = sum((freqDiff .^ 4) .* psd) / (spectralStd ^ 4 + eps);
-
-    spectralFlatness = exp(mean(log(analysisPower + eps))) / (mean(analysisPower) + eps);
-
-    shapeFeatures = [ ...
-        centroidNorm, ...
-        spectralEntropy, ...
-        spectralSkewness, ...
-        spectralKurtosis, ...
-        spectralFlatness];
+    shapeFeatures = [...
+        stats.centroidNorm,...
+        stats.entropy,...
+        stats.skewness,...
+        stats.kurtosis,...
+        stats.flatness];
 
     featureMatrix(idx, :) = [fftFeatures, shapeFeatures];
 end
 
-% Export ------------------------------------------------------------------
-fftFeatureNames = format_fft_feature_names(targetFreqs);
-featureNames = [fftFeatureNames, extraFeatureNames];
-
-featureTable = array2table(featureMatrix, 'VariableNames', featureNames);
-featureTable.label = labels;
-
-writetable(featureTable, outputFile);
-fprintf('Saved %d rows to %s\n', numRuns, outputFile);
+%% Export
+write_feature_table(featureMatrix, labels, config.targetFreqs, extraFeatureNames, config.outputFile);

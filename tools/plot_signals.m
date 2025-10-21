@@ -1,13 +1,13 @@
 %% Plot linear and nonlinear signals along with FFT power in dB.
 
-% Ensure helper functions on the data/helper path are accessible
+%% Setup helper path
 scriptDir = fileparts(mfilename('fullpath'));
 helperDir = fullfile(scriptDir, '..', 'data', 'helper');
 if exist(helperDir, 'dir')
     addpath(helperDir);
 end
 
-% Editable parameters -----------------------------------------------------
+%% Editable parameters
 Nsym = 1000;
 Nfft = 100;
 beta = 0.25;
@@ -18,11 +18,11 @@ avoid = 10;
 a = 1.4678;
 a1 = 1;
 a3 = -2.5261;
-noiseVariance = 0.1;
+noiseVar = 0.1;
 includeNonlinearity = true;
 includeNoise = false;
 
-% Simulation setup --------------------------------------------------------
+%% Simulation setup
 params = struct('Nsym', Nsym, ...
                 'Nfft', Nfft, ...
                 'osr', osr, ...
@@ -30,7 +30,7 @@ params = struct('Nsym', Nsym, ...
                 'a', a, ...
                 'a1', a1, ...
                 'a3', a3, ...
-                'noiseVar', noiseVariance);
+                'noiseVar', noiseVar);
 
 pulse = rcosdesign(beta, span, osr, 'sqrt');
 
@@ -42,40 +42,40 @@ if ~includeNonlinearity
     nonlinearPower = linearPower;
 end
 
-% Frequency grid ----------------------------------------------------------
-T = Ts / osr;
-fs = 1 / T;
-chunk = Nsym * osr;
-fVector = (-chunk/2 : chunk/2-1) * (fs / chunk);
+%% Frequency grid
+sampleInterval = Ts / osr;
+sampleRate = 1 / sampleInterval;
+numSamples = Nsym * osr;
+frequency = (-numSamples/2 : numSamples/2-1) * (sampleRate / numSamples);
 linearPSD = fftshift(linearPower);
 nonlinearPSD = fftshift(nonlinearPower);
+linearPSDdB = 10 * log10(linearPSD + eps);
+nonlinearPSDdB = 10 * log10(nonlinearPSD + eps);
+time = (0:numSamples-1) * sampleInterval;
 
-linearPSD_dB = 10 * log10(linearPSD + eps);
-nonlinearPSD_dB = 10 * log10(nonlinearPSD + eps);
-
-timeAxis = (0:chunk-1) * T;
-
-% Plots -------------------------------------------------------------------
+%% Plots
 figure('Name', 'Signals and FFT Magnitudes', 'Color', 'w');
 
-subplot(2,1,1);
-plot(timeAxis, yLinear, 'b', 'LineWidth', 1.1); hold on;
-plot(timeAxis, yNonlinear, '--r', 'LineWidth', 1.1);
+subplot(2, 1, 1);
+plot(time, yLinear, 'b', 'LineWidth', 1.1);
+hold on;
+plot(time, yNonlinear, '--r', 'LineWidth', 1.1);
 hold off;
 xlabel('Time (s)');
 ylabel('Amplitude');
 title('Matched Filter Output');
 legend('Linear', 'Nonlinear', 'Location', 'best');
 grid on;
-xlim([timeAxis(1) timeAxis(end)]);
+xlim([time(1) time(end)]);
 
-subplot(2,1,2);
-plot(fVector, linearPSD_dB, 'b', 'LineWidth', 1.1); hold on;
-plot(fVector, nonlinearPSD_dB, '--r', 'LineWidth', 1.1);
+subplot(2, 1, 2);
+plot(frequency, linearPSDdB, 'b', 'LineWidth', 1.1);
+hold on;
+plot(frequency, nonlinearPSDdB, '--r', 'LineWidth', 1.1);
 hold off;
 xlabel('Frequency (Hz)');
 ylabel('Power (dB)');
 title('Average Power Spectral Density');
 legend('Linear', 'Nonlinear', 'Location', 'best');
 grid on;
-xlim([fVector(1) fVector(end)]);
+xlim([frequency(1) frequency(end)]);

@@ -1,47 +1,12 @@
 %% Generate CSV features for linear vs nonlinear signals (20 FFT bins + energy metrics, dB scale).
 
-% Editable parameters -----------------------------------------------------
-Nsym = 1000;
-Nfft = 100;
-beta = 0.25;
-span = 10;
-osr = 16;
-Ts = 1;
-avoid = 10;
-a = 1.4678;
-a1 = 1;
-a3 = -2.5261;
-noiseVariance = 0.1;
-includeNoise = true;
-numRuns = 5000; % choose an even value for a balanced dataset
-outputName = '20_bins_energy_training_data.csv';
-
+%% Setup
 scriptDir = fileparts(mfilename('fullpath'));
 addpath(fullfile(scriptDir, '..', 'helper'));
 
-% Setup -------------------------------------------------------------------
-params = struct('Nsym', Nsym, ...
-                'Nfft', Nfft, ...
-                'osr', osr, ...
-                'avoid', avoid, ...
-                'a', a, ...
-                'a1', a1, ...
-                'a3', a3, ...
-                'noiseVar', noiseVariance);
+config = get_data_params(20, scriptDir, '20_bins_energy_training_data.csv');
 
-pulse = rcosdesign(beta, span, osr, 'sqrt');
-
-T = Ts / osr;
-fs = 1 / T;
-chunk = Nsym * osr;
-freqAxis = (0:chunk-1) * (fs / chunk);
-
-numFftFeatures = 20;
-maxAnalysisFreq = 5;
-referenceMaxBins = 60;
-[targetFreqs, fftSampleIdx] = get_fft_reference_selection(numFftFeatures, fs, chunk, maxAnalysisFreq, referenceMaxBins); % align to master grid
-
-extraFeatureNames = { ...
+extraFeatureNames = {
     'total_power', ...
     'max_power', ...
     'crest_factor', ...
@@ -49,62 +14,44 @@ extraFeatureNames = { ...
     'outer_power_ratio', ...
     'shoulder_power_ratio', ...
     'adjacent_channel_power_ratio'};
+
 numExtraFeatures = numel(extraFeatureNames);
 
-featureMatrix = zeros(numRuns, numFftFeatures + numExtraFeatures);
-labels = zeros(numRuns, 1);
+featureMatrix = zeros(config.numRuns, config.numFftFeatures + numExtraFeatures);
+labels = zeros(config.numRuns, 1);
 
-outputFile = fullfile(scriptDir, outputName);
+masks = get_frequency_masks(config.analysisFreqs);
 
-analysisMask = freqAxis <= maxAnalysisFreq;
-analysisFreqs = freqAxis(analysisMask);
-
-% Simulations -------------------------------------------------------------
-for idx = 1:numRuns
-    useNonlinear = idx > numRuns/2;
+%% Simulations
+for idx = 1:config.numRuns
+    useNonlinear = idx > config.numRuns / 2;
     labels(idx) = double(useNonlinear);
 
-    [avgPower, yTime] = compute_fft_average(params, pulse, useNonlinear, includeNoise);
+    [avgPower, yTime] = compute_fft_average(config.params, config.pulse, useNonlinear, config.includeNoise);
     fftPowerDb = 10 * log10(avgPower + eps);
 
-    fftFeatures = fftPowerDb(fftSampleIdx);
+    fftFeatures = fftPowerDb(config.fftSampleIdx);
 
-    analysisPower = avgPower(analysisMask);
-    powerSum = sum(analysisPower) + eps;
+    analysisPower = avgPower(config.analysisMask);
+    stats = compute_spectral_stats(config.analysisFreqs, analysisPower);
 
-    mainMask = analysisFreqs <= 1;
-    shoulderMask = analysisFreqs > 1 & analysisFreqs <= 2.5;
-    outerMask = analysisFreqs > 2.5;
-    adjacentMask = analysisFreqs > 1 & analysisFreqs <= 2;
-    regrowthMask = analysisFreqs >= 3 & analysisFreqs <= maxAnalysisFreq;
+    mainPower = sum(analysisPower(masks.main)) + eps;
+    shoulderPower = sum(analysisPower(masks.shoulder)) + eps;
+    outerPower = sum(analysisPower(masks.outer)) + eps;
+    adjacentPower = sum(analysisPower(masks.adjacent)) + eps;
+    regrowthPower = sum(analysisPower(masks.regrowth)) + eps;
 
-    mainPower = sum(analysisPower(mainMask)) + eps;
-    shoulderPower = sum(analysisPower(shoulderMask)) + eps;
-    outerPower = sum(analysisPower(outerMask)) + eps;
-    adjacentPower = sum(analysisPower(adjacentMask)) + eps;
-    regrowthPower = sum(analysisPower(regrowthMask)) + eps;
-
-    rmsVal = sqrt(mean(yTime.^2) + eps);
-    crestFactor = max(abs(yTime)) / rmsVal;
-
-    energyFeatures = [ ...
-        powerSum, ...
-        max(analysisPower), ...
-        crestFactor, ...
-        regrowthPower, ...
-        outerPower / mainPower, ...
-        shoulderPower / mainPower, ...
+    energyFeatures = [...
+        stats.powerSum,...
+        stats.maxPower,...
+        compute_crest_factor(yTime),...
+        regrowthPower,...
+        outerPower / mainPower,...
+        shoulderPower / mainPower,...
         adjacentPower / mainPower];
 
     featureMatrix(idx, :) = [fftFeatures, energyFeatures];
 end
 
-% Export ------------------------------------------------------------------
-fftFeatureNames = format_fft_feature_names(targetFreqs);
-featureNames = [fftFeatureNames, extraFeatureNames];
-
-featureTable = array2table(featureMatrix, 'VariableNames', featureNames);
-featureTable.label = labels;
-
-writetable(featureTable, outputFile);
-fprintf('Saved %d rows to %s\n', numRuns, outputFile);
+%% Export
+write_feature_table(featureMatrix, labels, config.targetFreqs, extraFeatureNames, config.outputFile);

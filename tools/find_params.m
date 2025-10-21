@@ -1,21 +1,18 @@
 %% Optimize amplitude and cubic nonlinearity parameters for threshold detection.
 
-% Ensure helper functions on the data/helper path are accessible
+%% Setup helper path
 scriptDir = fileparts(mfilename('fullpath'));
 helperDir = fullfile(scriptDir, '..', 'data', 'helper');
 if exist(helperDir, 'dir')
     addpath(helperDir);
 end
 
-%% last run a = 3.2801, a3 = 0.2992
-
-% Editable parameters -----------------------------------------------------
+%% Parameter configuration
 Nsym = 1000;
 Nfft = 100;
 beta = 0.25;
 span = 10;
 osr = 16;
-Ts = 1;
 avoid = 10;
 aInitial = 1.0;
 a1 = 1.0;
@@ -30,11 +27,6 @@ detectionWidth = 0.1;
 enableCoarseSearch = true;
 aGrid = linspace(0.5, 3.0, 8);
 a3Grid = linspace(-0.3, 0.3, 13);
-
-% Derived setup -----------------------------------------------------------
-T = Ts / osr;
-fs = 1 / T;
-chunk = Nsym * osr;
 
 pulse = rcosdesign(beta, span, osr, 'sqrt');
 
@@ -55,10 +47,8 @@ config = struct('Nsym', Nsym, ...
 objective = @(vec) thresholdObjective(vec, config, pulse, targetError);
 
 seedVec = [aInitial; a3Initial];
-seedLoss = objective(seedVec);
-% default seed for optimizer
 bestVec = seedVec;
-bestLoss = seedLoss;
+bestLoss = objective(seedVec);
 
 if enableCoarseSearch
     for aCandidate = aGrid
@@ -104,12 +94,8 @@ function loss = thresholdObjective(candidate, baseConfig, pulse, targetError)
         return;
     end
 
-    errorRate = evaluateError(config, pulse);
+    [errorRate, ~] = evaluateSpectra(config, pulse);
     loss = (errorRate - targetError) ^ 2;
-end
-
-function errorRate = evaluateError(config, pulse)
-    errorRate = evaluateSpectra(config, pulse);
 end
 
 function [errorRate, detectionRate, nonlinearPSD, linearPSD] = evaluateSpectra(config, pulse)

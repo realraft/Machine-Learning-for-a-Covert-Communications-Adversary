@@ -1,53 +1,53 @@
 function generate_data()
-% generate_data  Run all data generation scripts in the repo's data folder
-%
-% This function is location-aware: it finds the project root by walking up
-% from the file location until it finds a folder containing a 'data'
-% subfolder (or README.md). That makes it safe to move this file into
-% the `tools/` folder without depending on the present working directory.
+%GENERATE_DATA Run all data generation scripts in the repository.
 
-% Determine the directory of this file. For functions mfilename('fullpath')
-% returns the full path; if empty, fall back to pwd.
-this_file = mfilename('fullpath');
-if isempty(this_file)
-    start_dir = pwd;
-else
-    start_dir = fileparts(this_file);
+%% Locate project root
+scriptDir = fileparts(mfilename('fullpath'));
+if isempty(scriptDir)
+    scriptDir = pwd;
 end
 
-% Walk up until we find a directory that contains a 'data' folder (or README.md)
-project_root = start_dir;
-max_up = 10;
-found = false;
-for i = 1:max_up
-    if exist(fullfile(project_root, 'data'), 'dir') || exist(fullfile(project_root, 'README.md'), 'file')
-        found = true;
+projectRoot = scriptDir;
+maxDepth = 10;
+hasMarker = isfolder(fullfile(projectRoot, 'data')) || isfile(fullfile(projectRoot, 'README.md'));
+
+for depth = 1:maxDepth
+    if hasMarker
         break;
     end
-    parent = fileparts(project_root);
-    if isempty(parent) || strcmp(parent, project_root)
+
+    parent = fileparts(projectRoot);
+    if strcmp(parent, projectRoot)
+        projectRoot = '';
         break;
     end
-    project_root = parent;
+
+    projectRoot = parent;
+    hasMarker = isfolder(fullfile(projectRoot, 'data')) || isfile(fullfile(projectRoot, 'README.md'));
 end
 
-if ~found
-    error('generate_data:ProjectRootNotFound', ...
-        'Could not locate project root containing a ''data'' folder. Call generate_data from within the repository or update this function.');
+if isempty(projectRoot) || ~hasMarker
+    fprintf('Project root not located. No scripts executed.\n');
+    return;
 end
 
-data_folder = fullfile(project_root, 'data');
-subfolders = dir(data_folder);
-subfolders = subfolders([subfolders.isdir] & ~startsWith({subfolders.name}, '.'));
+dataFolder = fullfile(projectRoot, 'data');
+if ~isfolder(dataFolder)
+    fprintf('No data folder found at %s. No scripts executed.\n', dataFolder);
+    return;
+end
 
-for k = 1:length(subfolders)
-    subfolder_path = fullfile(data_folder, subfolders(k).name);
-    % Find all .m files starting with 'generate_' in the subfolder
-    m_files = dir(fullfile(subfolder_path, 'generate_*.m'));
-    for j = 1:length(m_files)
-        script_path = fullfile(subfolder_path, m_files(j).name);
-        fprintf('Running %s\n', script_path);
-        run(script_path);
+%% Execute generators
+entries = dir(dataFolder);
+folders = entries([entries.isdir] & ~startsWith({entries.name}, '.'));
+
+for idx = 1:numel(folders)
+    subfolderPath = fullfile(dataFolder, folders(idx).name);
+    scripts = dir(fullfile(subfolderPath, 'generate_*.m'));
+    for jdx = 1:numel(scripts)
+        scriptPath = fullfile(subfolderPath, scripts(jdx).name);
+        fprintf('Running %s\n', scriptPath);
+        run(scriptPath);
     end
 end
 
