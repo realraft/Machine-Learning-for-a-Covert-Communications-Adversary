@@ -101,7 +101,7 @@ for idx = 1:numRuns
 end
 
 % Export ------------------------------------------------------------------
-fftFeatureNames = arrayfun(@(k) sprintf('fft_%02d', k), 1:numFftFeatures, 'UniformOutput', false);
+fftFeatureNames = format_fft_feature_names(targetFreqs);
 featureNames = [fftFeatureNames, extraFeatureNames];
 
 featureTable = array2table(featureMatrix, 'VariableNames', featureNames);

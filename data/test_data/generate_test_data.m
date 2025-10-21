@@ -13,7 +13,7 @@ a1 = 1;
 a3 = -2.5261;
 noiseVariance = 0.1;
 includeNoise = true;
-numRuns = 5000; % choose an even value for a balanced dataset
+numRuns = 10; % choose an even value for a balanced dataset
 outputName = 'test_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
@@ -136,7 +136,7 @@ for idx = 1:numRuns
 end
 
 % Export ------------------------------------------------------------------
-fftFeatureNames = arrayfun(@(k) sprintf('fft_%02d', k), 1:numFftFeatures, 'UniformOutput', false);
+fftFeatureNames = format_fft_feature_names(targetFreqs);
 featureNames = [fftFeatureNames, extraFeatureNames];
 
 featureTable = array2table(featureMatrix, 'VariableNames', featureNames);
