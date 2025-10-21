@@ -17,7 +17,7 @@ numRuns = 5000; % choose an even value for a balanced dataset
 outputName = '60_bins_training_data.csv';
 
 scriptDir = fileparts(mfilename('fullpath'));
-addpath(fullfile(scriptDir, '..', 'tools'));
+addpath(fullfile(scriptDir, '..', 'helper'));
 
 % Setup -------------------------------------------------------------------
 params = struct('Nsym', Nsym, ...

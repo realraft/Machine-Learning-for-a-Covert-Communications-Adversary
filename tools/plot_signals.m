@@ -1,9 +1,13 @@
 %% Plot linear and nonlinear signals along with FFT power in dB.
 
-% Editable parameters -----------------------------------------------------
+% Ensure helper functions on the data/helper path are accessible
 scriptDir = fileparts(mfilename('fullpath'));
-addpath(scriptDir);
+helperDir = fullfile(scriptDir, '..', 'data', 'helper');
+if exist(helperDir, 'dir')
+    addpath(helperDir);
+end
 
+% Editable parameters -----------------------------------------------------
 Nsym = 1000;
 Nfft = 100;
 beta = 0.25;

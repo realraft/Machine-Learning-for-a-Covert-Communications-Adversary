@@ -1,4 +1,12 @@
 %% Optimize amplitude and cubic nonlinearity parameters for threshold detection.
+
+% Ensure helper functions on the data/helper path are accessible
+scriptDir = fileparts(mfilename('fullpath'));
+helperDir = fullfile(scriptDir, '..', 'data', 'helper');
+if exist(helperDir, 'dir')
+    addpath(helperDir);
+end
+
 %% last run a = 3.2801, a3 = 0.2992
 
 % Editable parameters -----------------------------------------------------
@@ -48,11 +56,11 @@ objective = @(vec) thresholdObjective(vec, config, pulse, targetError);
 
 seedVec = [aInitial; a3Initial];
 seedLoss = objective(seedVec);
+% default seed for optimizer
+bestVec = seedVec;
+bestLoss = seedLoss;
 
 if enableCoarseSearch
-    bestVec = seedVec;
-    bestLoss = seedLoss;
-
     for aCandidate = aGrid
         for a3Candidate = a3Grid
             candidateVec = [aCandidate; a3Candidate];
@@ -66,8 +74,6 @@ if enableCoarseSearch
     end
 
     fprintf('Coarse grid seed: a = %.4f, a3 = %.4f (loss %.4g)\n', bestVec(1), bestVec(2), bestLoss);
-else
-    bestVec = seedVec;
 end
 
 options = optimset('Display', 'iter', 'TolX', 1e-3, 'TolFun', 1e-3, ...
