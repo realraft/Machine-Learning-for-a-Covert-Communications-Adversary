@@ -1,0 +1,36 @@
+Dataset,Model,Train Accuracy,Test Accuracy,General Test Accuracy,Training Time (s)
+20_bins,Logistic Regression,1.0,1.0,1.0,0.013
+20_bins,Support Vector Machine,1.0,1.0,1.0,0.0148
+20_bins,Random Forest,1.0,1.0,1.0,0.42
+20_bins,Gradient Boosting,1.0,1.0,1.0,1.4916
+20_bins,MLP Classifier,1.0,1.0,1.0,0.8108
+20_bins_all,Logistic Regression,1.0,1.0,1.0,0.01
+20_bins_all,Support Vector Machine,1.0,1.0,1.0,0.0114
+20_bins_all,Random Forest,1.0,1.0,1.0,0.3977
+20_bins_all,Gradient Boosting,1.0,1.0,1.0,2.3691
+20_bins_all,MLP Classifier,1.0,1.0,1.0,0.546
+20_bins_distortion,Logistic Regression,1.0,1.0,1.0,0.0075
+20_bins_distortion,Support Vector Machine,1.0,1.0,1.0,0.0143
+20_bins_distortion,Random Forest,1.0,1.0,1.0,0.3547
+20_bins_distortion,Gradient Boosting,1.0,1.0,1.0,1.6733
+20_bins_distortion,MLP Classifier,1.0,1.0,1.0,0.6225
+20_bins_energy,Logistic Regression,1.0,1.0,1.0,0.0061
+20_bins_energy,Support Vector Machine,1.0,1.0,1.0,0.0149
+20_bins_energy,Random Forest,1.0,1.0,1.0,0.3509
+20_bins_energy,Gradient Boosting,1.0,1.0,1.0,1.8911
+20_bins_energy,MLP Classifier,1.0,1.0,1.0,0.6293
+20_bins_shape,Logistic Regression,1.0,1.0,1.0,0.0075
+20_bins_shape,Support Vector Machine,1.0,1.0,1.0,0.0166
+20_bins_shape,Random Forest,1.0,1.0,1.0,0.3582
+20_bins_shape,Gradient Boosting,1.0,1.0,1.0,1.7251
+20_bins_shape,MLP Classifier,1.0,1.0,1.0,0.6398
+40_bins,Logistic Regression,1.0,1.0,1.0,0.0108
+40_bins,Support Vector Machine,1.0,1.0,1.0,0.0208
+40_bins,Random Forest,1.0,1.0,1.0,0.4505
+40_bins,Gradient Boosting,1.0,1.0,1.0,2.7815
+40_bins,MLP Classifier,1.0,1.0,1.0,0.7646
+60_bins,Logistic Regression,1.0,1.0,1.0,0.0115
+60_bins,Support Vector Machine,1.0,1.0,1.0,0.0308
+60_bins,Random Forest,1.0,1.0,1.0,0.3822
+60_bins,Gradient Boosting,1.0,1.0,1.0,4.1815
+60_bins,MLP Classifier,1.0,1.0,1.0,0.689

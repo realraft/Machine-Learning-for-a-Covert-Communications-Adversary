@@ -20,7 +20,7 @@ a1 = 1;
 a3 = -2.5261;
 noiseVar = 0.1;
 includeNonlinearity = true;
-includeNoise = false;
+includeNoise = true;
 
 %% Simulation setup
 params = struct('Nsym', Nsym, ...
