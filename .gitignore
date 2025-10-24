@@ -1,5 +1,2 @@
 .venv
-.DS_Store
-
-# Ignore generated training data CSV files (match any filename ending with "training_data.csv")
 *training_data.csv

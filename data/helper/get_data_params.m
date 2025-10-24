@@ -2,11 +2,7 @@ function config = get_data_params(numFftFeatures, scriptDir, outputName, overrid
 %% Return shared configuration for data generation scripts.
 %   config = GET_DATA_PARAMS(numFftFeatures, scriptDir, outputName, overrides)
 %   builds the parameter set and derived values used across the data
-%   generation scripts. Provide overrides as a struct to adjust defaults.
-
-    if nargin < 4
-        overrides = struct();
-    end
+%   generation scripts.
 
     defaults = struct(...
         'Nsym', 1000, ...
@@ -24,14 +20,6 @@ function config = get_data_params(numFftFeatures, scriptDir, outputName, overrid
         'numRuns', 5000, ...
         'maxAnalysisFreq', 5, ...
         'referenceMaxBins', 60);
-
-    overrideFields = fieldnames(overrides);
-    for idx = 1:numel(overrideFields)
-        name = overrideFields{idx};
-        if isfield(defaults, name)
-            defaults.(name) = overrides.(name);
-        end
-    end
 
     params = struct(...
         'Nsym', defaults.Nsym, ...
