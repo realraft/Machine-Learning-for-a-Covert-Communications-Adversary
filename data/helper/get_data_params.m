@@ -18,6 +18,7 @@ function config = get_data_params(numFftFeatures, scriptDir, outputName, overrid
         'noiseVariance', 0.1, ...
         'includeNoise', true, ...
         'numRuns', 5000, ...
+        'minAnalysisFreq', 0.75, ...
         'maxAnalysisFreq', 5, ...
         'referenceMaxBins', 60);
 
@@ -38,11 +39,11 @@ function config = get_data_params(numFftFeatures, scriptDir, outputName, overrid
     chunk = defaults.Nsym * defaults.osr;
 
     freqAxis = (0:chunk-1) * (fs / chunk);
-    analysisMask = freqAxis <= defaults.maxAnalysisFreq;
+    analysisMask = (freqAxis >= defaults.minAnalysisFreq) & (freqAxis <= defaults.maxAnalysisFreq);
     analysisFreqs = freqAxis(analysisMask);
 
     [targetFreqs, fftSampleIdx] = get_fft_reference_selection(...
-        numFftFeatures, fs, chunk, defaults.maxAnalysisFreq, defaults.referenceMaxBins);
+        numFftFeatures, fs, chunk, defaults.minAnalysisFreq, defaults.maxAnalysisFreq, defaults.referenceMaxBins);
 
     config = struct();
     config.params = params;
@@ -57,6 +58,7 @@ function config = get_data_params(numFftFeatures, scriptDir, outputName, overrid
     config.numRuns = defaults.numRuns;
     config.includeNoise = defaults.includeNoise;
     config.outputFile = fullfile(scriptDir, outputName);
+    config.minAnalysisFreq = defaults.minAnalysisFreq;
     config.maxAnalysisFreq = defaults.maxAnalysisFreq;
     config.referenceMaxBins = defaults.referenceMaxBins;
     config.numFftFeatures = numFftFeatures;
