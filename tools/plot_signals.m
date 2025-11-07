@@ -15,10 +15,10 @@ span = 10;
 osr = 16;
 Ts = 1;
 avoid = 10;
-a = 1.4678;
+a = 1.5;
 a1 = 1;
-a3 = -2.5261;
-noiseVar = 0.1;
+a3 = -3.3306;
+noiseVar = 1.6728;
 includeNonlinearity = true;
 includeNoise = true;
 

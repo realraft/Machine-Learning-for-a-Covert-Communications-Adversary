@@ -26,10 +26,19 @@ function [avgSpectrum, yTime] = compute_fft_average(params, pulseShape, useNonli
         ak(1:avoid) = 0;
         ak(end-avoid+1:end) = 0;
 
-        x = conv(ak, pulseRow, 'same');
+        linearX = conv(ak, pulseRow, 'same');
+        basePower = mean(linearX .^ 2);
+
+        x = linearX;
 
         if useNonlinearity
             x = a1 * x + a3 * (x .^ 3);
+        end
+
+        signalPower = mean(x .^ 2);
+        if signalPower > 0 && basePower > 0
+            scale = sqrt(basePower / signalPower);
+            x = x * scale;
         end
 
         if useNoise
