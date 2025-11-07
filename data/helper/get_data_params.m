@@ -1,6 +1,6 @@
-function config = get_data_params(numFftFeatures, scriptDir, outputName, overrides)
+function config = get_data_params(numFftFeatures, scriptDir, outputName)
 %% Return shared configuration for data generation scripts.
-%   config = GET_DATA_PARAMS(numFftFeatures, scriptDir, outputName, overrides)
+%   config = GET_DATA_PARAMS(numFftFeatures, scriptDir, outputName)
 %   builds the parameter set and derived values used across the data
 %   generation scripts.
 
