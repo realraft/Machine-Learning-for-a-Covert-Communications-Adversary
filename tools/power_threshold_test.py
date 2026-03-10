@@ -1,4 +1,4 @@
-# this script sweeps possible power thresholds from the maxmimum and minimum
+# this script sweeps possible power thresholds from the maximum and minimum
 # power in the specified regrowth band to find the best accuracy
 
 import os
@@ -8,10 +8,10 @@ import matplotlib.pyplot as plt
 from sklearn.metrics import precision_score, recall_score, f1_score
 
 DATA_PATH = os.path.join("data", "data.csv") 
-N_BINS = 1600 # number of frequency bin columns
+N_BINS = 800 # number of frequency bin columns
 LABEL_COL = "nonlinear" # name of the class label column
-REGROWTH_START = 1548 # positional bin index (inclusive)
-REGROWTH_END = 1580 # positional bin index (inclusive)
+REGROWTH_START = 31 # positional bin index (inclusive)
+REGROWTH_END = 44 # positional bin index (inclusive)
 N_THRESHOLDS = 1000 # number of evenly spaced sweep values
 
 data = pd.read_csv(DATA_PATH)
