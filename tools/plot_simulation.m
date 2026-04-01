@@ -24,12 +24,10 @@ for i = 1:nFFT
     x = conv(ak, h, 'same');
     xNL = a1.*x + a3.*(x.^3);
 
-    noiseVar = noiseRatio * mean(x.^2);
+    x   = x   / sqrt(mean(x.^2));
+    xNL = xNL / sqrt(mean(xNL.^2));
 
-    powerRatio = mean(xNL.^2) / mean(x.^2);
-    xNL = xNL / sqrt(powerRatio);
-
-    noise = sqrt(noiseVar) * randn(1, length(x));
+    noise = sqrt(noiseRatio) * randn(1, length(x));
     x = x + noise;
     xNL = xNL + noise;
 

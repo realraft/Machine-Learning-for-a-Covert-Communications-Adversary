@@ -33,7 +33,7 @@ std_nonlinear = nonlinear_X.std(axis=0)
 
 # compute separability
 sep = np.abs(mean_nonlinear - mean_linear)
-top_indices_sorted = np.argsort(sep)[::-1]
+top_indices_sorted = np.argsort(sep)[::-1] # sort separable bins
 top20 = top_indices_sorted[:TOP_N]
 
 print(f"Top {TOP_N} most separable bins: {top20.tolist()}")

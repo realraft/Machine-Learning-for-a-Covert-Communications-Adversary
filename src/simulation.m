@@ -16,12 +16,6 @@ h = rcosdesign(beta, span, osr, 'sqrt'); % instantiate srrc signal
 dataL  = zeros(runs, N/2);
 dataNL = zeros(runs, N/2);
 
-% find the theoretical band edge bin
-bandwidth = (1 + beta) / 2;  % normalized bandwidth of SRRC
-band_edge_bin = round(bandwidth * N / osr)
-
-quit
-
 % outer loop: each run produces one averaged spectrum sample
 for r = 1:runs
     % instantiate per-run accumulators
@@ -37,15 +31,12 @@ for r = 1:runs
         x = conv(ak, h, 'same'); % make x
         xNL = a1.*x + a3.*(x.^3); % make nonlinear x
 
-        % calculate noise variance
-        noiseVar = noiseRatio * mean(x.^2); % variance is 75% of total linear power
-
         % normalize xNL and x power
-        powerRatio = mean(xNL.^2) / mean(x.^2); % compute power ratio for normalization
-        xNL = xNL / sqrt(powerRatio);
+        x   = x   / sqrt(mean(x.^2));
+        xNL = xNL / sqrt(mean(xNL.^2));
 
         % add noise
-        noise = sqrt(noiseVar) * randn(1, length(x)); % make noise vector
+        noise = sqrt(noiseRatio) * randn(1, length(x)); % make noise vector
         x = x + noise;
         xNL = xNL + noise;
 
