@@ -17,23 +17,27 @@ avgNL = zeros(1, N);
 
 % simulation loop (single run, averaged over nFFT)
 for i = 1:nFFT
-    ak = 2 * randi([0 1], 1, nSym) - 1;
-    ak([1:5, end-4:end]) = 0;
-    ak = upsample(ak, osr);
+    ak = 2 * randi([0 1], 1, nSym) - 1; % randomly generate symbol vector of +1 and -1
+    ak([1:5, end-4:end]) = 0; % make first 5 and last 5 symbols 0
+    ak = upsample(ak, osr); % upsample symbol vector
 
-    x = conv(ak, h, 'same');
-    xNL = a1.*x + a3.*(x.^3);
+    x = conv(ak, h, 'same'); % make x
+    xNL = a1.*x + a3.*(x.^3); % make nonlinear x
 
+    % normalize xNL and x power
     x   = x   / sqrt(mean(x.^2));
     xNL = xNL / sqrt(mean(xNL.^2));
 
-    noise = sqrt(noiseRatio) * randn(1, length(x));
+    % add noise
+    noise = sqrt(noiseRatio) * randn(1, length(x)); % make noise vector
     x = x + noise;
     xNL = xNL + noise;
 
+    % make y (convolve at the receiver)
     y = conv(x, h, 'same');
     yNL = conv(xNL, h, 'same');
 
+    % sum fft
     avgL  = avgL  + abs(fft(y)).^2;
     avgNL = avgNL + abs(fft(yNL)).^2;
 end
