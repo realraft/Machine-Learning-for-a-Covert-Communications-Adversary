@@ -1,7 +1,0 @@
-compute engineered features for each line and select only specific freq bins to keep
-
-remake ml pipeline to split the csv into different datasets in python by just truncating columns
-
-train and test models
-
-develop deep learning models from examples in research paper, ideally use all symbols in signal vector
