@@ -5,57 +5,68 @@ beta = 0.25; % rolloff factor
 span = 5; % number of symbols for srrc
 osr = 16; % oversampling rate
 a1 = 1; % linear coefficient
-a3 = -0.05; % nonlinear cubic coefficient
+a3 = linspace(-0.05, -0.2, 10); % nonlinear cubic coefficient sweep
 noiseRatio = .75; % what ratio of total linear power is used to determine noise variance
-runs = 5000; % number of independent runs for dataset generation
+runs = 100; % number of independent runs for dataset generation
+totalRuns = runs * length(a3);
 N = nSym * osr; % length of signal vector
-
 h = rcosdesign(beta, span, osr, 'sqrt'); % instantiate srrc signal
 
-% pre-allocate result matrices (one row per run)
-dataL  = zeros(runs, N/2);
-dataNL = zeros(runs, N/2);
+fprintf('Generating %d, continue?\n', length(a3) * runs * 2);
+userInput = input("");
+if ~strcmpi(strtrim(userInput), 'y')
+    return;
+end
 
-% outer loop: each run produces one averaged spectrum sample
-for r = 1:runs
-    % instantiate per-run accumulators
-    avgL  = zeros(1, N);
-    avgNL = zeros(1, N);
+% pre-allocate result matrices
+dataL  = zeros(totalRuns, N/2);
+dataNL = zeros(totalRuns, N/2);
 
-    % simulation loop
-    for i = 1:nFFT
-        ak = 2 * randi([0 1], 1, nSym) - 1; % randomly generate symbol vector of +1 and -1
-        ak([1:5, end-4:end]) = 0; % make first 5 and last 5 symbols 0
-        ak = upsample(ak, osr); % upsample symbol vector
+% outer loop over nonlinear coefficients, then runs
+for aIdx = 1:length(a3)
+    a3Current = a3(aIdx);
+    for r = 1:runs
+        rowIdx = (aIdx - 1) * runs + r;
 
-        x = conv(ak, h, 'same'); % make x
-        xNL = a1.*x + a3.*(x.^3); % make nonlinear x
+        % instantiate per-run accumulators
+        avgL  = zeros(1, N);
+        avgNL = zeros(1, N);
 
-        % normalize xNL and x power
-        x   = x   / sqrt(mean(x.^2));
-        xNL = xNL / sqrt(mean(xNL.^2));
+        % simulation loop
+        for i = 1:nFFT
+            ak = 2 * randi([0 1], 1, nSym) - 1; % randomly generate symbol vector of +1 and -1
+            ak([1:5, end-4:end]) = 0; % make first 5 and last 5 symbols 0
+            ak = upsample(ak, osr); % upsample symbol vector
 
-        % add noise
-        noise = sqrt(noiseRatio) * randn(1, length(x)); % make noise vector
-        x = x + noise;
-        xNL = xNL + noise;
+            x = conv(ak, h, 'same'); % make x
+            xNL = a1.*x + a3Current.*(x.^3); % make nonlinear x
 
-        % make y (convolve at the receiver)
-        y = conv(x, h, 'same');
-        yNL = conv(xNL, h, 'same');
+            % normalize xNL and x power
+            x   = x   / sqrt(mean(x.^2));
+            xNL = xNL / sqrt(mean(xNL.^2));
 
-        % sum fft
-        avgL  = avgL  + abs(fft(y)).^2;
-        avgNL = avgNL + abs(fft(yNL)).^2;
+            % add noise
+            noise = sqrt(noiseRatio) * randn(1, length(x)); % make noise vector
+            x = x + noise;
+            xNL = xNL + noise;
+
+            % make y (convolve at the receiver)
+            y = conv(x, h, 'same');
+            yNL = conv(xNL, h, 'same');
+
+            % sum fft
+            avgL  = avgL  + abs(fft(y)).^2;
+            avgNL = avgNL + abs(fft(yNL)).^2;
+        end
+
+        % average fft and store magnitude (real-valued power) for each run (only right half of spectrum)
+        dataL(rowIdx, :) = abs(avgL(1:N/2) / nFFT);
+        dataNL(rowIdx, :) = abs(avgNL(1:N/2) / nFFT);
     end
-
-    % average fft and store magnitude (real-valued power) for each run (only right half of spectrum)
-    dataL(r, :) = abs(avgL(1:N/2) / nFFT);
-    dataNL(r, :) = abs(avgNL(1:N/2) / nFFT);
 end
 
 % build binary classification dataset (label 0 = linear (avgL),  label 1 = nonlinear (avgNL))
-labels = [zeros(runs, 1); ones(runs, 1)];
+labels = [zeros(totalRuns, 1); ones(totalRuns, 1)];
 allData = [dataL; dataNL];
 
 % assemble table with descriptive column names

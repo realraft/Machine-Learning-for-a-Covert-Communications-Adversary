@@ -10,8 +10,8 @@ from sklearn.metrics import precision_score, recall_score, f1_score
 DATA_PATH = os.path.join("data", "data.csv") 
 N_BINS = 800 # number of frequency bin columns
 LABEL_COL = "nonlinear" # name of the class label column
-REGROWTH_START = 31 # positional bin index (inclusive)
-REGROWTH_END = 44 # positional bin index (inclusive)
+REGROWTH_START = 50 # positional bin index (inclusive)
+REGROWTH_END = 83 # positional bin index (inclusive)
 N_THRESHOLDS = 1000 # number of evenly spaced sweep values
 
 data = pd.read_csv(DATA_PATH)
@@ -32,8 +32,8 @@ thresholds = np.linspace(regrowth_power.min(), regrowth_power.max(), N_THRESHOLD
 
 # initialize arrays
 accuracies = np.zeros(N_THRESHOLDS)
-tprs       = np.zeros(N_THRESHOLDS)
-fprs       = np.zeros(N_THRESHOLDS)
+tprs = np.zeros(N_THRESHOLDS)
+fprs = np.zeros(N_THRESHOLDS)
 
 nonlinear = labels == 1
 linear = labels == 0
@@ -51,7 +51,7 @@ for i, T in enumerate(thresholds):
     tn = int(( preds[linear] == 0).sum())
 
     # store values for this run
-    accuracies[i] = (tp + tn) / len(labels)
+    accuracies[i] = np.mean(preds == labels)
     tprs[i]       = tp / n_nonlinear if n_nonlinear > 0 else 0.0
     fprs[i]       = fp / n_linear if n_linear > 0 else 0.0
 
@@ -64,12 +64,13 @@ print(f"\nBest threshold: {best_T:.6e}")
 
 # final evaluation at T* (best threshold)
 final_preds = (regrowth_power > best_T).astype(int)
+final_acc = np.mean(final_preds == labels)
 
 precision  = precision_score(labels, final_preds, zero_division=0)
 recall_val = recall_score(labels, final_preds, zero_division=0)
 f1         = f1_score(labels, final_preds, zero_division=0)
 
-print(f"Accuracy: {best_acc:.4f}")
+print(f"Accuracy: {final_acc:.4f}")
 print(f"Precision: {precision:.4f}")
 print(f"Recall: {recall_val:.4f}")
 print(f"F1 Score: {f1:.4f}")
