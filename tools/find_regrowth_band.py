@@ -6,7 +6,7 @@ import numpy as np
 import pandas as pd
 import matplotlib.pyplot as plt
 
-DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "data.csv")
+DATA_PATH = os.path.join(os.path.dirname(os.path.dirname(__file__)), "data", "bins_data.csv")
 N_BINS = 800 # number of frequency bin columns
 LABEL_COL = "nonlinear" # name of the class label column
 TOP_N = 20 # number of top separable bins to highlight

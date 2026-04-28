@@ -5,35 +5,34 @@ beta = 0.25; % Rolloff factor
 span = 5; % Number of symbols for srrc
 osr = 16; % Oversampling rate
 a1 = 1; % Linear coefficient
-a3 = linspace(-0.05, -0.5, 10); % Nonlinear cubic coefficient sweep
-noiseRatio = 0.5; % What ratio of total linear power is used to determine noise variance
-runs = 50; % Number of independent runs for dataset generation
+a3 = linspace(-0.05, -0.2, 100); % Nonlinear cubic coefficient sweep
+noiseRatio = 0.75; % What ratio of total linear power is used to determine noise variance
+runs = 150; % Number of independent runs for dataset generation
 totalRuns = runs * length(a3); % Total number of runs
 N = nSym * osr; % Length of signal vector
 h = rcosdesign(beta, span, osr, 'sqrt'); % Instantiate srrc signal
+% Prepare for parallel execution on cluster
+numA3 = length(a3);
 
-% Prompt user to continue
-fprintf('Generating %d rows, continue? (y/n)\n', totalRuns*2);
-userInput = input("", "s");
-if ~strcmpi(strtrim(userInput), 'y')
-    return;
-end
+parpool('local', 16);
 
-% Pre allocate datasets
-dataL_feat = zeros(totalRuns, 7);
-dataNL_feat = zeros(totalRuns, 7);
+% Pre-allocate block containers for results from each parallel worker
+blockFeatL = cell(numA3, 1);
+blockFeatNL = cell(numA3, 1);
+blockL = cell(numA3, 1);
+blockNL = cell(numA3, 1);
 
-dataL_bins = zeros(totalRuns, N/2);
-dataNL_bins = zeros(totalRuns, N/2);
-
-% Outer loop over nonlinear coefficients, inner for simulation of that a3
-for aIdx = 1:length(a3)
+% Outer loop over nonlinear coefficients in parallel
+parfor aIdx = 1:numA3
     a3Current = a3(aIdx);
-    fprintf('Progress: a3 index %d/%d (a3=%.6f)\n', aIdx, length(a3), a3Current);
+    fprintf('Progress: a3 index %d/%d (a3=%.6f)\n', aIdx, numA3, a3Current);
+
+    localFeatL = zeros(runs, 7);
+    localFeatNL = zeros(runs, 7);
+    localL = zeros(runs, N/2);
+    localNL = zeros(runs, N/2);
 
     for r = 1:runs
-        rowIdx = (aIdx - 1) * runs + r;
-
         % Per-run accumulators
         featL = [];
         featNL = [];
@@ -77,14 +76,31 @@ for aIdx = 1:length(a3)
             binsNL = binsNL + abs(fft(yNL)).^2;
         end
 
-        % Append blocks to datasets (features from first iteration only)
-        dataL_feat(rowIdx, :) = extract_features(featL);
-        dataNL_feat(rowIdx, :) = extract_features(featNL);
-
-        % Average fft and store magnitude (real-valued power) for each run (only right half of spectrum)
-        dataL_bins(rowIdx, :) = abs(binsL(1:N/2) / nFFT);
-        dataNL_bins(rowIdx, :) = abs(binsNL(1:N/2) / nFFT);
+        % Store per-run results into local matrices
+        localFeatL(r, :) = extract_features(featL);
+        localFeatNL(r, :) = extract_features(featNL);
+        localL(r, :) = abs(binsL(1:N/2) / nFFT);
+        localNL(r, :) = abs(binsNL(1:N/2) / nFFT);
     end
+
+    blockFeatL{aIdx} = localFeatL;
+    blockFeatNL{aIdx} = localFeatNL;
+    blockL{aIdx} = localL;
+    blockNL{aIdx} = localNL;
+end
+
+% Combine blocks from parallel runs into final datasets
+dataL_feat = zeros(totalRuns, 7);
+dataNL_feat = zeros(totalRuns, 7);
+dataL_bins = zeros(totalRuns, N/2);
+dataNL_bins = zeros(totalRuns, N/2);
+
+for aIdx = 1:numA3
+    rowRange = (aIdx - 1) * runs + (1:runs);
+    dataL_feat(rowRange, :) = blockFeatL{aIdx};
+    dataNL_feat(rowRange, :) = blockFeatNL{aIdx};
+    dataL_bins(rowRange, :) = blockL{aIdx};
+    dataNL_bins(rowRange, :) = blockNL{aIdx};
 end
 
 labels = [zeros(totalRuns, 1); ones(totalRuns, 1)];
@@ -95,14 +111,14 @@ featureNames = {
     'peak_power', 'normalized_m4', 'spectral_flatness', 'spectral_entropy'
 };
 featDataset = array2table([[dataL_feat; dataNL_feat], labels], 'VariableNames', [featureNames, {'nonlinear'}]);
-outputPath = fullfile(fileparts(mfilename('fullpath')), '..', 'data', 'data.csv');
+outputPath = '/work/pi_mduarte_umass_edu/oraftery_umass_edu/data/data.csv';
 writetable(featDataset, outputPath);
 fprintf('Saved data.csv features: %d rows x %d columns to %s\n', height(featDataset), width(featDataset), outputPath);
 
 % Write bins CSV
 binNames = arrayfun(@(k) sprintf('bin_%d', k), 0:(N/2)-1, 'UniformOutput', false);
 binsDataset = array2table([[dataL_bins; dataNL_bins], labels], 'VariableNames', [binNames, {'nonlinear'}]);
-outputPath = fullfile(fileparts(mfilename('fullpath')), '..', 'data', 'bins_data.csv');
+outputPath = '/work/pi_mduarte_umass_edu/oraftery_umass_edu/data/bins_data.csv';
 writetable(binsDataset, outputPath);
 fprintf('Saved bins_data.csv: %d rows x %d columns to %s\n', height(binsDataset), width(binsDataset), outputPath);
 
