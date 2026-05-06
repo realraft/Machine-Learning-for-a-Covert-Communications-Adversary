@@ -60,15 +60,6 @@ for aIdx = 1:length(a3)
     end
 end
 
-% --- TEMPORARY SANITY CHECK ---
-% Sanity check: are the classes actually different?
-sampleDiff = mean(abs(dataNL_raw(1:10,:) - dataL_raw(1:10,:)).^2, 2);
-fprintf('Mean squared difference between NL and L (first 10 rows): %.6f\n', mean(sampleDiff));
-if mean(sampleDiff) < 1e-6
-    warning('Classes may be too similar to distinguish!');
-end
-% ------------------------------
-
 labels = [zeros(totalRuns, 1); ones(totalRuns, 1)];
 
 % Write raw IQ CSV
