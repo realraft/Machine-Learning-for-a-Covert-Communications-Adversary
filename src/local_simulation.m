@@ -5,8 +5,8 @@ beta = 0.25; % Rolloff factor
 span = 5; % Number of symbols for srrc
 osr = 16; % Oversampling rate
 a1 = 1; % Linear coefficient
-a3 = linspace(-0.05, -0.5, 10); % Nonlinear cubic coefficient sweep
-noiseRatio = 0.5; % What ratio of total linear power is used to determine noise variance
+a3 = linspace(-0.05, -0.2, 10); % Nonlinear cubic coefficient sweep
+noiseRatio = 0.75; % What ratio of total linear power is used to determine noise variance
 runs = 50; % Number of independent runs for dataset generation
 totalRuns = runs * length(a3); % Total number of runs
 N = nSym * osr; % Length of signal vector
@@ -47,19 +47,22 @@ for aIdx = 1:length(a3)
             ak = upsample(ak, osr); % Upsample symbol vector
 
             x = conv(ak, h, 'same'); % Make x
-            xNL = a1.*x + a3Current.*(x.^3); % Make nonlinear x
 
-            % Normalize xNL and x power
-            normFactor = sqrt(mean(x.^2) + 1e-12);
-            x = x / normFactor;
-            xNL = xNL / normFactor;
+            % Normalize x
+            x = x / sqrt(mean(abs(x).^2));
 
-            % Add noise
-            Nvar = noiseRatio * sum(x.^2) / (length(x) - 1);
-            noise = sqrt(Nvar) * randn(1, length(x)); % Make noise vector
+            % Apply nonlinearity
+            xNL = a1.*x + a3Current.*(x.^3);
+            
+            % Normalize xNL
+            xNL = xNL / sqrt(mean(abs(xNL).^2));
 
-            x = x + noise;
-            xNL = xNL + noise;
+            % Now add independent noise
+            noise_L  = sqrt(noiseRatio) * randn(1, length(x));
+            noise_NL = sqrt(noiseRatio) * randn(1, length(x));
+
+            x   = x + noise_L;
+            xNL = xNL + noise_NL;
 
             % Features dataset block: save only the first run
             if i == 1

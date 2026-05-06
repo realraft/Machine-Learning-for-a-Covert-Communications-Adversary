@@ -111,7 +111,7 @@ featureNames = {
     'peak_power', 'normalized_m4', 'spectral_flatness', 'spectral_entropy'
 };
 featDataset = array2table([[dataL_feat; dataNL_feat], labels], 'VariableNames', [featureNames, {'nonlinear'}]);
-outputPath = '/work/pi_mduarte_umass_edu/oraftery_umass_edu/data/data.csv';
+outputPath = '/work/pi_mduarte_umass_edu/oraftery_umass_edu/data/feat_data.csv';
 writetable(featDataset, outputPath);
 fprintf('Saved data.csv features: %d rows x %d columns to %s\n', height(featDataset), width(featDataset), outputPath);
 

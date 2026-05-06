@@ -42,7 +42,7 @@ n_linear = linear.sum()
 
 # test every threshold
 for i, T in enumerate(thresholds):
-    preds = (regrowth_power < T).astype(int) # make predictions
+    preds = (regrowth_power > T).astype(int) # make predictions
 
     # record prediction accuracy through confidence matrix
     tp = int(( preds[nonlinear] == 1).sum())
