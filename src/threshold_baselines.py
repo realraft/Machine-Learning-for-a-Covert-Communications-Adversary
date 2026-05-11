@@ -1,37 +1,3 @@
-"""Threshold-test detector baselines for the covert-comms adversary thesis.
-
-For each (dataset, statistic, a3) combination, compute a single scalar
-test statistic per sample, then sweep the threshold to find the best
-achievable test accuracy. Reports per-fit accuracy, AUC, and writes the
-full per-sample scores so the plotting script can derive ROC curves.
-
-Datasets:
-  /bins -- matched-filter PSD vector (M x N real)
-  /iq   -- raw I/Q samples (M x 2N real, [Re | Im])
-Note: the engineered-feature dataset (/feat) is excluded from threshold
-tests since the engineered features ARE essentially threshold statistics
-themselves.
-
-Statistics (each computed per sample):
-  power     -- mean |x|^2 (time domain) / mean of bins (spectrum)
-  kurtosis  -- excess kurtosis of |x| / of bin values
-  papr      -- max(|x|^2)/mean(|x|^2) / max(bin)/mean(bin)
-  autocorr  -- |corr(r[:-2], r[2:])| of |x| or of bin sequence
-
-Same train/test split as the ML and NN pipelines (70/30, seed 42,
-stratified by class) -- only the test rows are used. Training data is
-not needed since these detectors have no parameters to fit.
-
-Sign convention: if a statistic is anti-correlated with class 1 (AUC
-< 0.5), its score is negated so that the saved scores always satisfy
-"higher score => more likely class 1" -- mirrors the classical_ml
-predictions.h5 layout exactly.
-
-Outputs:
-  results/threshold_baselines/metrics.csv     -- one row per (dataset, statistic, a3)
-  results/threshold_baselines/predictions.h5  -- y_test, y_pred, y_score per fit
-"""
-
 import argparse
 from pathlib import Path
 
