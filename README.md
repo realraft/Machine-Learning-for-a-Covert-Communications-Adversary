@@ -11,7 +11,8 @@ Alice transmits through a cubic-nonlinearity power amplifier (coefficient `a3`);
 
 ## Layout
 - `src/cluster_simulation.m` - MATLAB sim, generates all three datasets
-- `src/train_classical_ml.py`, `src/train_nn.py` - classifiers
+- `src/train_classical_ml.py` - classical ML classifiers
+- `src/train_nn.py` - neural net classifiers
 - `src/threshold_baselines.py` - single-statistic detectors
 - `src/make_results_plots.py`, `src/make_explanatory_plots.py` - figures
 - `scripts/cluster_*.sh` - Slurm jobs for Unity
